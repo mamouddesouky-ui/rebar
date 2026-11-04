@@ -1,0 +1,14 @@
+{
+  "background_color": "#ffffff",
+  "dir": "auto",
+  "display": "standalone",
+  "name": "rebar",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "2026",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "id": "rebar",
+  "description": "rebar",
+  "lang": "ar"
+}
