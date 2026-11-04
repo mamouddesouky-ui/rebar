@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c1917">
+<link rel="manifest" href="manifest.json">
+<title>حاسبة حديد التسليح</title>
+<style>
+:root{--bg:#f4f1ec;--card:#fff;--ink:#1c1917;--mute:#78716c;--line:#e7e2db;--acc:#c2410c;--acc2:#ea580c;--ok:#15803d;--inp:#faf8f5}
+:root[data-theme=dark]{--bg:#141210;--card:#1f1c19;--ink:#f5f1ea;--mute:#a8a29e;--line:#34302b;--acc:#fb923c;--acc2:#f97316;--ok:#4ade80;--inp:#171513}
+*{box-sizing:border-box;margin:0}
+body{font-family:Tahoma,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);line-height:1.5}
+header{background:#1c1917;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5;border-bottom:4px solid var(--acc2)}
+header h1{font-size:17px}header small{color:#a8a29e;font-size:11px}
+.btn{border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer;background:var(--acc2);color:#fff}
+.btn.g{background:#2d2926;color:#e7e2db}.btn.ok{background:#15803d}.btn.sm{padding:5px 10px;font-size:12px}
+main{max-width:1000px;margin:auto;padding:14px;display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:860px){main{grid-template-columns:1.25fr 1fr;align-items:start}.side{position:sticky;top:76px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+h2{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+h2 i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.top{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+label{display:block;font-size:11px;color:var(--mute);margin-bottom:3px}
+input,select{width:100%;background:var(--inp);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 8px;font:inherit;font-size:14px}
+input:focus,select:focus,.btn:focus-visible{outline:2px solid var(--acc2);outline-offset:1px}
+.grp{background:var(--inp);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px}
+.grp b{font-size:12px;display:block;margin-bottom:6px}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.tot{background:#1c1917;color:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
+.tot .big{font-size:34px;font-weight:800;color:#fbbf24}
+.tot .l{display:flex;justify-content:space-between;font-size:13px;color:#d6d3d1;margin-top:5px}
+.tot .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:12px;text-align:right}
+th{background:var(--inp);padding:7px}td{padding:7px;border-top:1px solid var(--line)}
+.num{font-variant-numeric:tabular-nums}
+.it{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:12px}
+.it:first-child{border-top:0}.mute{color:var(--mute)}
+.scroll{overflow-x:auto}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1c1917;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:9}
+#toast.on{opacity:1}
+@media print{header,.noprint{display:none!important}body{background:#fff;color:#000}.card,.tot{border:1px solid #bbb;background:#fff;color:#000}.tot .big{color:#000}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>حاسبة حديد التسليح</h1><small>شبكات + كراسي + حزام · تعمل بدون إنترنت</small></div>
+  <div style="display:flex;gap:6px">
+    <button class="btn g sm" id="printBtn">طباعة</button>
+    <button class="btn g sm" id="themeBtn">🌙</button>
+  </div>
+</header>
+
+<main>
+<section class="noprint">
+  <div class="card">
+    <h2>الإعدادات</h2>
+    <div class="top">
+      <div><label>نظام الشبكة</label><select id="meshType"><option value="double">شبكتين</option><option value="single">سفلية فقط</option></select></div>
+      <div><label>اسم العنصر</label><input id="elName" placeholder="قاعدة ق1"></div>
+      <div><label>الهالك %</label><select id="waste"><option>0</option><option>2.5</option><option selected>5</option><option>7.5</option><option>10</option></select></div>
+    </div>
+  </div>
+  <div id="groups"></div>
+</section>
+
+<aside class="side">
+  <div class="tot">
+    <div class="mute" style="color:#fb923c;font-size:12px;font-weight:700">إجمالي الوزن المطلوب للعنصر</div>
+    <div><span class="big num" id="tKg">0.00</span> <b>كجم</b> <span class="num" id="tTon" style="float:left;color:#a8a29e;font-size:13px">0.000 طن</span></div>
+    <div class="l"><span>الوزن الصافي</span><b class="num" id="tNet">0.00 كجم</b></div>
+    <div class="l"><span>الهالك المضاف</span><b class="num" id="tWaste">0.00 كجم</b></div>
+    <div class="acts noprint">
+      <button class="btn" id="addBtn">＋ إضافة للمشروع</button>
+      <button class="btn ok" id="waBtn">واتساب</button>
+      <button class="btn g" id="copyBtn" style="grid-column:span 2">نسخ التقرير</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>ملخص حسب القطر</h2>
+    <div class="scroll"><table><thead><tr><th>القطر</th><th>الطول (م)</th><th>صافي</th><th>مع الهالك</th><th>أسياخ 12م</th></tr></thead><tbody id="diaBody"></tbody></table></div>
+  </div>
+
+  <div class="card"><h2>تفاصيل العنصر</h2><div id="parts"></div></div>
+
+  <div class="card">
+    <h2>المشروع (<span id="projN">0</span> عنصر) <button class="btn g sm noprint" id="clearProj" style="margin-right:auto">مسح الكل</button></h2>
+    <div id="projList"></div>
+    <div class="scroll"><table id="projTbl" hidden><thead><tr><th>القطر</th><th>الوزن</th><th>أسياخ 12م</th></tr></thead><tbody id="projBody"></tbody></table></div>
+    <div id="projTotal" style="font-weight:800;margin-top:8px"></div>
+  </div>
+
+  <div class="card noprint">
+    <h2>أوزان المتر الطولي</h2>
+    <div class="scroll"><table><thead><tr><th>القطر</th><th>كجم/م</th><th>سيخ 12م</th></tr></thead><tbody id="uwBody"></tbody></table></div>
+  </div>
+</aside>
+</main>
+<div id="toast"></div>
+
+<script>
+const D=[8,10,12,14,16,18,20,22,25,28,32];
+const GROUPS=[
+ {id:'bm',t:'فرش الشبكة السفلية',c:'#2563eb',d:12,n:20,l:6},
+ {id:'bc',t:'غطاء الشبكة السفلية',c:'#2563eb',d:12,n:25,l:5},
+ {id:'tm',t:'فرش الشبكة العلوية',c:'#059669',d:10,n:20,l:6,top:1},
+ {id:'tc',t:'غطاء الشبكة العلوية',c:'#059669',d:10,n:25,l:5,top:1},
+ {id:'ch',t:'الكراسي',c:'#d97706',d:12,n:12,l:1.2,step:.05},
+ {id:'bt',t:'أسياخ الحزام / الداير',c:'#d97706',d:12,n:2,l:22}
+];
+const $=id=>document.getElementById(id);
+const uw=d=>d*d/162;
+const f=(v,p=2)=>(+v).toLocaleString('en-US',{minimumFractionDigits:p,maximumFractionDigits:p});
+const LS={get(k,def){try{return JSON.parse(localStorage.getItem(k))??def}catch(e){return def}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let project=LS.get('rb_project',[]);
+let cur={items:[],net:0,gross:0,byDia:{}};
+
+// build form
+$('groups').innerHTML=GROUPS.map(g=>`
+<div class="card ${g.top?'topg':''}"><h2><i style="background:${g.c}"></i>${g.t}</h2>
+<div class="row">
+ <div><label>القطر (مم)</label><select id="${g.id}d">${D.map(x=>`<option ${x==g.d?'selected':''}>${x}</option>`).join('')}</select></div>
+ <div><label>العدد</label><input type="number" inputmode="decimal" min="0" id="${g.id}n" value="${g.n}"></div>
+ <div><label>الطول (م)</label><input type="number" inputmode="decimal" min="0" step="${g.step||.1}" id="${g.id}l" value="${g.l}"></div>
+</div></div>`).join('');
+$('uwBody').innerHTML=D.map(d=>`<tr><td><b>Ø${d}</b></td><td class="num">${uw(d).toFixed(3)}</td><td class="num">${f(uw(d)*12)} كجم</td></tr>`).join('');
+
+function num(id){return Math.max(0,parseFloat($(id).value)||0)}
+
+function calc(){
+  const dbl=$('meshType').value==='double', w=num('waste')/100;
+  document.querySelectorAll('.topg').forEach(e=>e.hidden=!dbl);
+  const items=GROUPS.filter(g=>dbl||!g.top).map(g=>{
+    const d=+$(g.id+'d').value,n=num(g.id+'n'),l=num(g.id+'l'),len=n*l;
+    return {name:g.t,d,n,l,len,kg:len*uw(d)};
+  });
+  const byDia={};let net=0;
+  items.forEach(i=>{net+=i.kg;const o=byDia[i.d]||(byDia[i.d]={len:0,kg:0});o.len+=i.len;o.kg+=i.kg});
+  cur={items,net,gross:net*(1+w),byDia,w};
+  $('tKg').textContent=f(cur.gross);
+  $('tTon').textContent=f(cur.gross/1000,3)+' طن';
+  $('tNet').textContent=f(net)+' كجم';
+  $('tWaste').textContent='+'+f(net*w)+' كجم';
+  $('parts').innerHTML=items.filter(i=>i.len>0).map(i=>`<div class="it"><div><b>${i.name}</b><div class="mute">Ø${i.d} مم · ${i.n} × ${i.l} م</div></div><div style="text-align:left"><b class="num">${f(i.kg,1)} كجم</b><div class="mute num">${f(i.len,1)} م</div></div></div>`).join('')||'<div class="mute">أدخل الأعداد والأطوال</div>';
+  $('diaBody').innerHTML=Object.keys(byDia).sort((a,b)=>a-b).filter(d=>byDia[d].len>0).map(d=>{const o=byDia[d];
+    return `<tr><td><b>Ø${d}</b></td><td class="num">${f(o.len,1)}</td><td class="num">${f(o.kg,1)}</td><td class="num"><b>${f(o.kg*(1+w),1)}</b></td><td class="num">${Math.ceil(o.len*(1+w)/12)}</td></tr>`}).join('');
+  saveForm();
+}
+
+// project
+function renderProj(){
+  $('projN').textContent=project.length;
+  $('projList').innerHTML=project.map((p,i)=>`<div class="it"><div><b>${p.name}</b><div class="mute">${f(p.gross,1)} كجم</div></div><button class="btn g sm noprint" data-del="${i}">حذف</button></div>`).join('')||'<div class="mute" style="font-size:12px">لم تضف عناصر بعد. احسب عنصراً ثم اضغط «إضافة للمشروع».</div>';
+  const t={};let kg=0;
+  project.forEach(p=>{for(const d in p.byDia){const o=t[d]||(t[d]={len:0,kg:0});o.len+=p.byDia[d].len*(1+p.w);o.kg+=p.byDia[d].kg*(1+p.w);}kg+=p.gross});
+  $('projTbl').hidden=!project.length;
+  $('projBody').innerHTML=Object.keys(t).sort((a,b)=>a-b).map(d=>`<tr><td><b>Ø${d}</b></td><td class="num">${f(t[d].kg,1)} كجم</td><td class="num">${Math.ceil(t[d].len/12)}</td></tr>`).join('');
+  $('projTotal').textContent=project.length?`إجمالي المشروع: ${f(kg)} كجم (${f(kg/1000,3)} طن)`:'';
+  LS.set('rb_project',project);
+}
+$('addBtn').onclick=()=>{
+  if(cur.net<=0)return toast('لا توجد كميات لإضافتها');
+  project.push({name:$('elName').value.trim()||('عنصر '+(project.length+1)),gross:cur.gross,byDia:cur.byDia,w:cur.w});
+  renderProj();toast('تمت الإضافة للمشروع');
+};
+$('projList').onclick=e=>{const i=e.target.dataset.del;if(i!==undefined){project.splice(+i,1);renderProj()}};
+$('clearProj').onclick=()=>{if(project.length&&confirm('مسح كل عناصر المشروع؟')){project=[];renderProj()}};
+
+// report
+function report(){
+  const dbl=$('meshType').value==='double';
+  let r=`📋 *تقرير حديد التسليح*
+🏗 *العنصر:* ${$('elName').value.trim()||'عنصر خرساني'}
+⛓ *النظام:* ${dbl?'شبكتين':'شبكة سفلية'}
+----------------
+`;
+  cur.items.filter(i=>i.len>0).forEach(i=>r+=`• ${i.name} (Ø${i.d}): ${i.n} × ${i.l}م = ${f(i.len,1)}م
+`);
+  r+=`----------------
+*ملخص الأقطار:*
+`;
+  Object.keys(cur.byDia).sort((a,b)=>a-b).filter(d=>cur.byDia[d].len>0).forEach(d=>r+=`Ø${d}: ${f(cur.byDia[d].kg*(1+cur.w),1)} كجم (≈ ${Math.ceil(cur.byDia[d].len*(1+cur.w)/12)} سيخ 12م)
+`);
+  r+=`----------------
+⚖️ الصافي: ${f(cur.net)} كجم
+➕ الهالك: ${$('waste').value}%
+🎯 *الإجمالي: ${f(cur.gross)} كجم (${f(cur.gross/1000,3)} طن)*`;
+  if(project.length){const k=project.reduce((s,p)=>s+p.gross,0);r+=`
+
+📦 إجمالي المشروع (${project.length} عنصر): ${f(k)} كجم`}
+  return r;
+}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)}
+$('copyBtn').onclick=()=>{
+  const t=report();
+  const fb=()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('تم نسخ التقرير')}catch(e){toast('تعذر النسخ')}a.remove()};
+  navigator.clipboard?navigator.clipboard.writeText(t).then(()=>toast('تم نسخ التقرير'),fb):fb();
+};
+$('waBtn').onclick=()=>window.open('https://wa.me/?text='+encodeURIComponent(report()),'_blank');
+$('printBtn').onclick=()=>window.print();
+
+// theme
+function setTheme(t){document.documentElement.dataset.theme=t;$('themeBtn').textContent=t==='dark'?'☀️':'🌙';LS.set('rb_theme',t)}
+$('themeBtn').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+setTheme(LS.get('rb_theme',matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+
+// persist form
+const ids=['meshType','elName','waste',...GROUPS.flatMap(g=>[g.id+'d',g.id+'n',g.id+'l'])];
+function saveForm(){LS.set('rb_form',Object.fromEntries(ids.map(i=>[i,$(i).value])))}
+const saved=LS.get('rb_form',{});ids.forEach(i=>{if(saved[i]!==undefined)$(i).value=saved[i]});
+ids.forEach(i=>{$(i).addEventListener('input',calc);$(i).addEventListener('change',calc)});
+calc();renderProj();
+</script>
+</body>
+</html>
